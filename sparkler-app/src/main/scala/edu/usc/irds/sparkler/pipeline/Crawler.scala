@@ -200,7 +200,9 @@ class Crawler extends CliTool {
     //Step: Store these to nutch segments
     val outputPath = this.outputPath + "/" + job.currentTask
     //Step : write to FS
-    storeContent(outputPath, rdd)
+    //Do not need to storeContent, if you not using it.
+    //Crawler checks on Solr what to fetch and unfetch
+    //storeContent(outputPath, rdd)
 
     rdd
   }
@@ -214,8 +216,8 @@ object OutLinkUpsert extends ((SparklerJob, RDD[CrawlData]) => RDD[Resource]) wi
 
       .reduceByKey({ case (r1, r2) => if (r1.getDiscoverDepth <= r2.getDiscoverDepth) r1 else r2 }) // pick a parent
       //TODO: url normalize
-      .map({ case (link, parent) => new Resource(link, parent.getDiscoverDepth + 1, job, UNFETCHED,
-      parent.getFetchTimestamp, parent.getId, parent.getScore) }) //create a new resource
+      .map({ case (link, parent) if(parent.getDiscoverDepth <= 5) => new Resource(link, parent.getDiscoverDepth + 1, job, UNFETCHED,
+      parent.getFetchTimestamp, parent.getId, parent.getScore) }) //create a new resource, parent depth is bigger than 5 do not make new resource
   }
 }
 
