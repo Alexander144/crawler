@@ -57,7 +57,7 @@ public class FetcherDefault extends AbstractExtensionPoint implements Fetcher, F
     protected Map<String, String> httpHeaders;
 
     private List<HttpCookie> httpCookies;
-    private HttpsURLConnection conn;
+    private HttpsURLConnection urlConn;
     private CookieManager cookieManager;
 
     public FetcherDefault(){}
@@ -144,9 +144,9 @@ public class FetcherDefault extends AbstractExtensionPoint implements Fetcher, F
     public FetchedData fetch(Resource resource) throws Exception {
         LOG.info("DEFAULT FETCHER {}", resource.getUrl());
 
-        conn = (HttpsURLConnection) new URL(resource.getUrl()).openConnection();
+        urlConn = (HttpsURLConnection) new URL(resource.getUrl()).openConnection();
         if (httpHeaders != null){
-            httpHeaders.forEach(conn::setRequestProperty);
+            httpHeaders.forEach(urlConn::setRequestProperty);
             LOG.debug("Adding headers:{}", httpHeaders.keySet());
         } else {
             LOG.debug("No headers are available");
@@ -154,25 +154,25 @@ public class FetcherDefault extends AbstractExtensionPoint implements Fetcher, F
         String userAgentValue = getUserAgent();
         if (userAgentValue != null) {
             LOG.debug(USER_AGENT + ": " + userAgentValue);
-            conn.setRequestProperty(USER_AGENT, userAgentValue);
+            urlConn.setRequestProperty(USER_AGENT, userAgentValue);
         } else {
             LOG.debug("No rotating agents are available");
         }
 
-        conn.setConnectTimeout(CONNECT_TIMEOUT);
-        conn.setReadTimeout(READ_TIMEOUT);
+        urlConn.setConnectTimeout(CONNECT_TIMEOUT);
+        urlConn.setReadTimeout(READ_TIMEOUT);
         //Set the cookies
         if(httpCookies != null) {
             for (HttpCookie cookie : httpCookies) {
-                conn.addRequestProperty("Cookie", cookie.getName() + "=" + cookie.getValue());
+                urlConn.addRequestProperty("Cookie", cookie.getName() + "=" + cookie.getValue());
                 System.out.println("Cookies added: " + cookie);
             }
         }
 
-        int responseCode = ((HttpsURLConnection)conn).getResponseCode();
+        int responseCode = ((HttpsURLConnection)urlConn).getResponseCode();
         LOG.debug("STATUS CODE : " + responseCode + " " + resource.getUrl());
         boolean truncated = false;
-        try (InputStream inStream = conn.getInputStream()) {
+        try (InputStream inStream = urlConn.getInputStream()) {
             ByteArrayOutputStream bufferOutStream = new ByteArrayOutputStream();
             byte[] buffer = new byte[4096]; // 4kb buffer
             int read;
@@ -181,17 +181,17 @@ public class FetcherDefault extends AbstractExtensionPoint implements Fetcher, F
                 if (bufferOutStream.size() >= CONTENT_LIMIT) {
                     truncated = true;
                     LOG.info("Content Truncated: {}, TotalSize={}, TruncatedSize={}", resource.getUrl(),
-                            conn.getContentLength(), bufferOutStream.size());
+                            urlConn.getContentLength(), bufferOutStream.size());
                     break;
                 }
             }
             bufferOutStream.flush();
             byte[] rawData = bufferOutStream.toByteArray();
             IOUtils.closeQuietly(bufferOutStream);
-            FetchedData fetchedData = new FetchedData(rawData, conn.getContentType(), responseCode);
+            FetchedData fetchedData = new FetchedData(rawData, urlConn.getContentType(), responseCode);
             resource.setStatus(ResourceStatus.FETCHED.toString());
             fetchedData.setResource(resource);
-            fetchedData.setHeaders(conn.getHeaderFields());
+            fetchedData.setHeaders(urlConn.getHeaderFields());
             if (truncated) {
                 fetchedData.getHeaders().put(TRUNCATED, Collections.singletonList(Boolean.TRUE.toString()));
             }
@@ -220,35 +220,35 @@ public class FetcherDefault extends AbstractExtensionPoint implements Fetcher, F
     public void sendPost(String url, String postParams) throws Exception {
 
         URL obj = new URL(url);
-        conn = (HttpsURLConnection) obj.openConnection();
+        urlConn = (HttpsURLConnection) obj.openConnection();
         String userInfo = postParams;
         System.out.println("Username and password : " + userInfo);
         byte[] postData = userInfo.getBytes( StandardCharsets.UTF_8 );
         // Acts like a browser
-        conn.setUseCaches(false);
-        conn.setRequestMethod("POST");
-        conn.setRequestProperty("Accept",
+        urlConn.setUseCaches(false);
+        urlConn.setRequestMethod("POST");
+        urlConn.setRequestProperty("Accept",
                 "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
-        conn.setRequestProperty("Accept-Language", "en-US,en;q=0.5");
-        conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+        urlConn.setRequestProperty("Accept-Language", "en-US,en;q=0.5");
+        urlConn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
 
-        conn.setDoOutput(true);
-        conn.setDoInput(true);
+        urlConn.setDoOutput(true);
+        urlConn.setDoInput(true);
 
         // Send post request
-        OutputStream wr = conn.getOutputStream();
+        OutputStream wr = urlConn.getOutputStream();
 
         wr.write(postData);
         wr.flush();
         wr.close();
 
-        conn.connect();
-        int responseCode = conn.getResponseCode();
+        urlConn.connect();
+        int responseCode = urlConn.getResponseCode();
         System.out.println("\nTrying to login on : " + url);
         httpCookies = cookieManager.getCookieStore().getCookies();
 
         BufferedReader in =
-                new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                new BufferedReader(new InputStreamReader(urlConn.getInputStream()));
         String inputLine;
         StringBuffer response = new StringBuffer();
 
@@ -298,25 +298,25 @@ public class FetcherDefault extends AbstractExtensionPoint implements Fetcher, F
     private String GetPageContent(String url) throws Exception {
 
         URL obj = new URL(url);
-        conn = (HttpsURLConnection) obj.openConnection();
+        urlConn = (HttpsURLConnection) obj.openConnection();
 
         // default is GET
-        conn.setRequestMethod("GET");
+        urlConn.setRequestMethod("GET");
 
-        conn.setUseCaches(false);
+        urlConn.setUseCaches(false);
 
         // act like a browser
-        conn.setRequestProperty("User-Agent", USER_AGENT);
-        conn.setRequestProperty("Accept",
+        urlConn.setRequestProperty("User-Agent", USER_AGENT);
+        urlConn.setRequestProperty("Accept",
                 "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
-        conn.setRequestProperty("Accept-Language", "en-US,en;q=0.5");
+        urlConn.setRequestProperty("Accept-Language", "en-US,en;q=0.5");
 
-        int responseCode = conn.getResponseCode();
+        int responseCode = urlConn.getResponseCode();
         System.out.println("\nSending 'GET' request to URL : " + url);
         System.out.println("Response Code : " + responseCode);
 
         BufferedReader in =
-                new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                new BufferedReader(new InputStreamReader(urlConn.getInputStream()));
         String inputLine;
         StringBuffer response = new StringBuffer();
 
