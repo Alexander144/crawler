@@ -217,6 +217,27 @@ public class FetcherDefault extends AbstractExtensionPoint implements Fetcher, F
         }
     }
 
+    public void logOut(String url) throws IOException {
+        URL obj = new URL(url);
+        urlConn = (HttpsURLConnection) obj.openConnection();
+        urlConn.setRequestMethod("GET");
+        urlConn.setRequestProperty("User-Agent", USER_AGENT);
+        urlConn.setRequestProperty("Accept",
+                "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
+        urlConn.setRequestProperty("Accept-Language", "en-US,en;q=0.5");
+        urlConn.setInstanceFollowRedirects(false);
+        int responseCode = urlConn.getResponseCode();
+        System.out.println("\nSending 'GET' request to URL : " + url);
+        System.out.println("Response Code : " + responseCode);
+        if(responseCode == 200)
+        {
+            System.out.println("Logged out");
+        }
+        else{
+            System.out.println("Failed to log out");
+        }
+    }
+
     public void sendPost(String url, String postParams) throws Exception {
 
         URL obj = new URL(url);
@@ -242,7 +263,7 @@ public class FetcherDefault extends AbstractExtensionPoint implements Fetcher, F
         wr.flush();
         wr.close();
 
-        urlConn.connect();
+        //urlConn.connect();
         int responseCode = urlConn.getResponseCode();
         System.out.println("\nTrying to login on : " + url);
         httpCookies = cookieManager.getCookieStore().getCookies();

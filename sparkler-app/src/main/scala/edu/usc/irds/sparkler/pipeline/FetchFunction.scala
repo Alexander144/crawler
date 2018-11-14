@@ -45,6 +45,13 @@ object FetchFunction
     }
   }
 
+  def logOut(logoutUrl:String): Unit ={
+    if(logoutUrl != "")
+    {
+      defaultFetcher.logOut(logoutUrl)
+    }
+  }
+
   override def apply(job: SparklerJob, resources: Iterator[Resource])
   : Iterator[FetchedData] = {
     val fetcher:scala.Option[Fetcher] = PluginService.getExtension(classOf[Fetcher], job)

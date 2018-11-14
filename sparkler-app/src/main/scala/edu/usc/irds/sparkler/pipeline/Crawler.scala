@@ -96,6 +96,10 @@ class Crawler extends CliTool {
     usage = "Auth site for login to a page")
   var authPage: String = ""
 
+  @Option(name = "-logutPage", aliases = Array("--logutPage"),
+    usage = "logut site for logut to a page")
+  var logutPage: String = ""
+
   @Option(name = "-username", aliases = Array("--username"),
     usage = "Username for login to a page")
   var username: String = ""
@@ -174,12 +178,14 @@ class Crawler extends CliTool {
 
       processFetched(scoredRdd)
 
+
       LOG.info(s"===End of iteration $itr Committing crawldb..===")
       solrc.commitCrawlDb()
     }
 
     solrc.close()
     //PluginService.shutdown(job)
+    FetchFunction.logOut(logutPage)
     LOG.info("Shutting down Spark CTX..")
     sc.stop()
   }
